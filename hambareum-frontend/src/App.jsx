@@ -1,55 +1,10 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { ABI } from "./contract/contractABI.js";
 
 const CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 const COOLDOWN_SECONDS = 30;
 
-const CONTRACT_ABI = [
-  {
-    inputs: [{ internalType: "string", name: "_message", type: "string" }],
-    name: "sendMessage",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "getAllMessages",
-    outputs: [
-      {
-        components: [
-          { internalType: "address", name: "sender", type: "address" },
-          { internalType: "string", name: "content", type: "string" },
-          { internalType: "uint256", name: "timestamp", type: "uint256" },
-        ],
-        internalType: "struct HambaPortal.Message[]",
-        name: "",
-        type: "tuple[]",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, internalType: "address", name: "from", type: "address" },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "timestamp",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "string",
-        name: "content",
-        type: "string",
-      },
-    ],
-    name: "NewMessage",
-    type: "event",
-  },
-];
+const CONTRACT_ABI = ABI;
 
 const formatAddress = (address) =>
   `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
