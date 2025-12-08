@@ -6,8 +6,401 @@ const COOLDOWN_SECONDS = 30;
 
 const CONTRACT_ABI = ABI;
 
+// Utility function remains outside
 const formatAddress = (address) =>
   `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+
+// --- Component Definitions Moved Outside of App ---
+
+const ConnectButton = ({ connectWallet, loading }) => (
+  <button
+    onClick={connectWallet}
+    disabled={loading}
+    className="group relative w-full md:w-auto px-8 py-4 bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-bold rounded-xl shadow-2xl hover:shadow-cyan-500/30 hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center overflow-hidden"
+  >
+    <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+    {loading ? (
+      <>
+        <svg
+          className="animate-spin -ml-1 mr-3 h-5 w-5 text-white relative z-10"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          ></circle>
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          ></path>
+        </svg>
+        <span className="relative z-10">Connecting...</span>
+      </>
+    ) : (
+      <>
+        <span className="relative z-10">Connect Wallet</span>
+        <svg
+          className="ml-3 relative z-10 w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M13 10V3L4 14h7v7l9-11h-7z"
+          ></path>
+        </svg>
+      </>
+    )}
+  </button>
+);
+
+const MessageForm = ({
+  currentAccount,
+  sendHambaMessage,
+  newMessage,
+  setNewMessage,
+  loading,
+  isOnCooldown,
+  formattedTimeRemaining,
+  formatAddress,
+}) => (
+  <div className="relative bg-gradient-to-br from-gray-900 to-gray-800 p-6 rounded-2xl shadow-2xl border border-gray-700 transition-all duration-300 hover:shadow-cyan-500/20">
+    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-t-2xl"></div>
+    <h2 className="text-2xl font-bold text-white mb-4 pb-4 border-b border-gray-700 flex items-center">
+      <svg
+        className="w-6 h-6 mr-2 text-cyan-400"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+          d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+        ></path>
+      </svg>
+      Send a Message (Max 280 Chars)
+    </h2>
+
+    {currentAccount && (
+      <div className="mb-6 p-4 bg-gray-800/50 rounded-xl border border-gray-700 backdrop-blur-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center">
+            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-green-400 to-cyan-400 mr-3 animate-pulse"></div>
+            <p className="text-sm font-medium text-gray-300">
+              Connected as:{" "}
+              <span className="text-cyan-300 font-mono font-bold">
+                {formatAddress(currentAccount)}
+              </span>
+            </p>
+          </div>
+          <div className="flex items-center">
+            <div
+              className={`px-4 py-2 rounded-full font-bold transition-all duration-300 ${
+                isOnCooldown
+                  ? "bg-gradient-to-r from-red-900/30 to-red-800/30 text-red-300 border border-red-700/50"
+                  : "bg-gradient-to-r from-green-900/30 to-emerald-800/30 text-emerald-300 border border-emerald-700/50"
+              }`}
+            >
+              <div className="flex items-center">
+                <svg
+                  className={`w-4 h-4 mr-2 ${
+                    isOnCooldown ? "animate-spin" : ""
+                  }`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d={
+                      isOnCooldown
+                        ? "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        : "M13 10V3L4 14h7v7l9-11h-7z"
+                    }
+                  ></path>
+                </svg>
+                {formattedTimeRemaining}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
+    <form onSubmit={sendHambaMessage} className="space-y-4">
+      <div className="relative">
+        <textarea
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          placeholder={
+            currentAccount
+              ? "Type your message to the blockchain..."
+              : "Connect wallet to send messages..."
+          }
+          maxLength="280"
+          rows="4"
+          // Crucial fix: The MessageForm is now a static component type,
+          // so React can preserve focus on the textarea.
+          disabled={loading || isOnCooldown || !currentAccount}
+          className="w-full p-4 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-300 disabled:opacity-50 resize-none backdrop-blur-sm"
+        />
+        <div className="absolute bottom-3 right-3">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center">
+            <span className="text-xs font-bold text-cyan-300">
+              {newMessage.length}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+        <p className="text-sm text-gray-400">
+          Characters: {newMessage.length}/280
+        </p>
+        <button
+          type="submit"
+          disabled={
+            loading ||
+            isOnCooldown ||
+            newMessage.trim().length === 0 ||
+            !currentAccount
+          }
+          className="group relative w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-cyan-600 to-purple-600 text-white font-bold rounded-xl shadow-lg hover:shadow-cyan-500/30 hover:scale-[1.02] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-cyan-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl"></div>
+          {loading ? (
+            <div className="flex items-center justify-center relative z-10">
+              <svg
+                className="animate-spin h-5 w-5 mr-3"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+              Processing...
+            </div>
+          ) : (
+            <div className="flex items-center justify-center relative z-10">
+              <span>Broadcast Message</span>
+              <svg
+                className="ml-2 w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                ></path>
+              </svg>
+            </div>
+          )}
+        </button>
+      </div>
+    </form>
+  </div>
+);
+
+const MessageList = ({
+  messages,
+  fetchAllMessages,
+  loading,
+  currentAccount,
+  formatAddress,
+}) => (
+  <div className="relative bg-gradient-to-br from-gray-900 to-gray-800 p-6 rounded-2xl shadow-2xl border border-gray-700">
+    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-pink-600 rounded-t-2xl"></div>
+    <h2 className="text-2xl font-bold text-white mb-4 pb-4 border-b border-gray-700 flex justify-between items-center">
+      <div className="flex items-center">
+        <svg
+          className="w-6 h-6 mr-2 text-purple-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+          ></path>
+        </svg>
+        Message History
+      </div>
+      <button
+        onClick={fetchAllMessages}
+        className="group text-sm bg-gradient-to-r from-purple-600/20 to-pink-600/20 text-purple-300 hover:text-white px-4 py-2 rounded-lg border border-purple-700/50 hover:border-purple-500 transition-all duration-300 disabled:opacity-50 flex items-center"
+        disabled={loading}
+      >
+        {loading ? (
+          <>
+            <svg
+              className="animate-spin h-4 w-4 mr-2"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            Refreshing...
+          </>
+        ) : (
+          <>
+            Refresh
+            <svg
+              className="ml-2 w-4 h-4 group-hover:rotate-180 transition-transform duration-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              ></path>
+            </svg>
+          </>
+        )}
+      </button>
+    </h2>
+
+    {messages.length === 0 ? (
+      <div className="text-center py-12">
+        <div className="w-24 h-24 mx-auto mb-6 opacity-20">
+          <svg
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="1"
+              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+            ></path>
+          </svg>
+        </div>
+        <p className="text-gray-400 text-lg mb-2">The portal is quiet...</p>
+        <p className="text-gray-500">Be the first to send a message!</p>
+      </div>
+    ) : (
+      <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
+        {messages.map((message, index) => (
+          <div
+            key={index}
+            className={`p-5 rounded-xl transition-all duration-300 border ${
+              message.sender.toLowerCase() === currentAccount?.toLowerCase()
+                ? "bg-gradient-to-r from-cyan-900/20 to-cyan-800/10 border-cyan-700/30 shadow-lg shadow-cyan-500/10"
+                : "bg-gray-800/30 border-gray-700/50 hover:border-gray-600/50"
+            }`}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-3 gap-2">
+              <div className="flex items-center">
+                <div
+                  className={`w-2 h-2 rounded-full mr-3 ${
+                    message.sender.toLowerCase() ===
+                    currentAccount?.toLowerCase()
+                      ? "bg-gradient-to-r from-cyan-400 to-cyan-300 animate-pulse"
+                      : "bg-gradient-to-r from-purple-400 to-pink-300"
+                  }`}
+                ></div>
+                <div>
+                  <p className="font-bold text-sm">
+                    {message.sender.toLowerCase() ===
+                    currentAccount?.toLowerCase() ? (
+                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-cyan-200">
+                        👤 You
+                      </span>
+                    ) : (
+                      <span className="text-gray-300">
+                        {formatAddress(message.sender)}
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-xs text-gray-500 font-mono">
+                    {message.sender}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center px-3 py-1 bg-gray-900/50 rounded-full border border-gray-700/50">
+                <svg
+                  className="w-3 h-3 mr-2 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
+                </svg>
+                <p className="text-xs text-gray-400">
+                  {new Date(message.timestamp * 1000).toLocaleString()}
+                </p>
+              </div>
+            </div>
+            <p className="text-gray-200 leading-relaxed break-words whitespace-pre-wrap pl-5 border-l-2 border-cyan-500/30">
+              {message.content}
+            </p>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+);
+
+// --- App Component Definition ---
 
 const App = () => {
   const [currentAccount, setCurrentAccount] = useState(null);
@@ -128,10 +521,12 @@ const App = () => {
       setSuccessMessage("Message sent successfully! Refreshing history...");
 
       const block = await provider.getBlock("latest");
-      setLastMessageTime(block.timestamp);
+      setLastMessageTime(Number(block.timestamp)); // Ensure timestamp is a number
 
+      // Refresh messages after a short delay
       setTimeout(() => {
         fetchAllMessages();
+        checkCooldown(); // Update cooldown status after successful send
       }, 3000);
     } catch (e) {
       console.error("Error sending message:", e);
@@ -184,7 +579,8 @@ const App = () => {
           setCurrentAccount(accounts[0]);
         }
 
-        await fetchAllMessages();
+        // Removed redundant fetchAllMessages here, it's handled in the next useEffect
+        // based on currentAccount change, which happens right above this.
 
         window.ethereum.on("accountsChanged", (newAccounts) => {
           setCurrentAccount(newAccounts.length > 0 ? newAccounts[0] : null);
@@ -196,15 +592,22 @@ const App = () => {
       }
     };
     checkIfWalletIsConnected();
-  }, [fetchAllMessages]);
+  }, []); // Depend only on initial mounting
 
   useEffect(() => {
     if (currentAccount) {
       fetchAllMessages();
       checkCooldown();
-    }
-  }, [currentAccount, fetchAllMessages, checkCooldown]);
+      // Set up a periodic check for cooldown status while connected
+      const intervalId = setInterval(() => {
+        checkCooldown();
+      }, 5000); // Check every 5 seconds
 
+      return () => clearInterval(intervalId);
+    }
+  }, [currentAccount, fetchAllMessages, checkCooldown]); // Run when account changes
+
+  // Cooldown calculation
   const now = Math.floor(Date.now() / 1000);
   const timeElapsed = now - lastMessageTime;
   const timeRemaining = COOLDOWN_SECONDS - timeElapsed;
@@ -212,377 +615,6 @@ const App = () => {
 
   const formattedTimeRemaining =
     timeRemaining > 0 ? `${Math.ceil(timeRemaining)}s` : "Ready";
-
-  const ConnectButton = () => (
-    <button
-      onClick={connectWallet}
-      disabled={loading}
-      className="group relative w-full md:w-auto px-8 py-4 bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-bold rounded-xl shadow-2xl hover:shadow-cyan-500/30 hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center overflow-hidden"
-    >
-      <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-      {loading ? (
-        <>
-          <svg
-            className="animate-spin -ml-1 mr-3 h-5 w-5 text-white relative z-10"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            ></circle>
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
-          </svg>
-          <span className="relative z-10">Connecting...</span>
-        </>
-      ) : (
-        <>
-          <span className="relative z-10">Connect Wallet</span>
-          <svg
-            className="ml-3 relative z-10 w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M13 10V3L4 14h7v7l9-11h-7z"
-            ></path>
-          </svg>
-        </>
-      )}
-    </button>
-  );
-
-  const MessageForm = () => (
-    <div className="relative bg-gradient-to-br from-gray-900 to-gray-800 p-6 rounded-2xl shadow-2xl border border-gray-700 transition-all duration-300 hover:shadow-cyan-500/20">
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-t-2xl"></div>
-      <h2 className="text-2xl font-bold text-white mb-4 pb-4 border-b border-gray-700 flex items-center">
-        <svg
-          className="w-6 h-6 mr-2 text-cyan-400"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-          ></path>
-        </svg>
-        Send a Message (Max 280 Chars)
-      </h2>
-
-      {currentAccount && (
-        <div className="mb-6 p-4 bg-gray-800/50 rounded-xl border border-gray-700 backdrop-blur-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center">
-              <div className="w-3 h-3 rounded-full bg-gradient-to-r from-green-400 to-cyan-400 mr-3 animate-pulse"></div>
-              <p className="text-sm font-medium text-gray-300">
-                Connected as:{" "}
-                <span className="text-cyan-300 font-mono font-bold">
-                  {formatAddress(currentAccount)}
-                </span>
-              </p>
-            </div>
-            <div className="flex items-center">
-              <div
-                className={`px-4 py-2 rounded-full font-bold transition-all duration-300 ${
-                  isOnCooldown
-                    ? "bg-gradient-to-r from-red-900/30 to-red-800/30 text-red-300 border border-red-700/50"
-                    : "bg-gradient-to-r from-green-900/30 to-emerald-800/30 text-emerald-300 border border-emerald-700/50"
-                }`}
-              >
-                <div className="flex items-center">
-                  <svg
-                    className={`w-4 h-4 mr-2 ${
-                      isOnCooldown ? "animate-spin" : ""
-                    }`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d={
-                        isOnCooldown
-                          ? "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                          : "M13 10V3L4 14h7v7l9-11h-7z"
-                      }
-                    ></path>
-                  </svg>
-                  {formattedTimeRemaining}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <form onSubmit={sendHambaMessage} className="space-y-4">
-        <div className="relative">
-          <textarea
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder={
-              currentAccount
-                ? "Type your message to the blockchain..."
-                : "Connect wallet to send messages..."
-            }
-            maxLength="280"
-            rows="4"
-            disabled={loading || isOnCooldown || !currentAccount}
-            className="w-full p-4 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-300 disabled:opacity-50 resize-none backdrop-blur-sm"
-          />
-          <div className="absolute bottom-3 right-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center">
-              <span className="text-xs font-bold text-cyan-300">
-                {newMessage.length}
-              </span>
-            </div>
-          </div>
-        </div>
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-gray-400">
-            Characters: {newMessage.length}/280
-          </p>
-          <button
-            type="submit"
-            disabled={
-              loading ||
-              isOnCooldown ||
-              newMessage.trim().length === 0 ||
-              !currentAccount
-            }
-            className="group relative w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-cyan-600 to-purple-600 text-white font-bold rounded-xl shadow-lg hover:shadow-cyan-500/30 hover:scale-[1.02] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-cyan-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl"></div>
-            {loading ? (
-              <div className="flex items-center justify-center relative z-10">
-                <svg
-                  className="animate-spin h-5 w-5 mr-3"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Processing...
-              </div>
-            ) : (
-              <div className="flex items-center justify-center relative z-10">
-                <span>Broadcast Message</span>
-                <svg
-                  className="ml-2 w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                  ></path>
-                </svg>
-              </div>
-            )}
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-
-  const MessageList = () => (
-    <div className="relative bg-gradient-to-br from-gray-900 to-gray-800 p-6 rounded-2xl shadow-2xl border border-gray-700">
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-pink-600 rounded-t-2xl"></div>
-      <h2 className="text-2xl font-bold text-white mb-4 pb-4 border-b border-gray-700 flex justify-between items-center">
-        <div className="flex items-center">
-          <svg
-            className="w-6 h-6 mr-2 text-purple-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-            ></path>
-          </svg>
-          Message History
-        </div>
-        <button
-          onClick={fetchAllMessages}
-          className="group text-sm bg-gradient-to-r from-purple-600/20 to-pink-600/20 text-purple-300 hover:text-white px-4 py-2 rounded-lg border border-purple-700/50 hover:border-purple-500 transition-all duration-300 disabled:opacity-50 flex items-center"
-          disabled={loading}
-        >
-          {loading ? (
-            <>
-              <svg
-                className="animate-spin h-4 w-4 mr-2"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-              Refreshing...
-            </>
-          ) : (
-            <>
-              Refresh
-              <svg
-                className="ml-2 w-4 h-4 group-hover:rotate-180 transition-transform duration-300"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                ></path>
-              </svg>
-            </>
-          )}
-        </button>
-      </h2>
-
-      {messages.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="w-24 h-24 mx-auto mb-6 opacity-20">
-            <svg
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="1"
-                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-              ></path>
-            </svg>
-          </div>
-          <p className="text-gray-400 text-lg mb-2">The portal is quiet...</p>
-          <p className="text-gray-500">Be the first to send a message!</p>
-        </div>
-      ) : (
-        <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
-          {messages.map((message, index) => (
-            <div
-              key={index}
-              className={`p-5 rounded-xl transition-all duration-300 border ${
-                message.sender.toLowerCase() === currentAccount?.toLowerCase()
-                  ? "bg-gradient-to-r from-cyan-900/20 to-cyan-800/10 border-cyan-700/30 shadow-lg shadow-cyan-500/10"
-                  : "bg-gray-800/30 border-gray-700/50 hover:border-gray-600/50"
-              }`}
-            >
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-3 gap-2">
-                <div className="flex items-center">
-                  <div
-                    className={`w-2 h-2 rounded-full mr-3 ${
-                      message.sender.toLowerCase() ===
-                      currentAccount?.toLowerCase()
-                        ? "bg-gradient-to-r from-cyan-400 to-cyan-300 animate-pulse"
-                        : "bg-gradient-to-r from-purple-400 to-pink-300"
-                    }`}
-                  ></div>
-                  <div>
-                    <p className="font-bold text-sm">
-                      {message.sender.toLowerCase() ===
-                      currentAccount?.toLowerCase() ? (
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-cyan-200">
-                          👤 You
-                        </span>
-                      ) : (
-                        <span className="text-gray-300">
-                          {formatAddress(message.sender)}
-                        </span>
-                      )}
-                    </p>
-                    <p className="text-xs text-gray-500 font-mono">
-                      {message.sender}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center px-3 py-1 bg-gray-900/50 rounded-full border border-gray-700/50">
-                  <svg
-                    className="w-3 h-3 mr-2 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    ></path>
-                  </svg>
-                  <p className="text-xs text-gray-400">
-                    {new Date(message.timestamp * 1000).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-              <p className="text-gray-200 leading-relaxed break-words whitespace-pre-wrap pl-5 border-l-2 border-cyan-500/30">
-                {message.content}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 py-10 px-4 sm:px-6 lg:px-8 font-[Inter]">
@@ -622,7 +654,8 @@ const App = () => {
                 </div>
               </div>
             ) : (
-              <ConnectButton />
+              // Use the imported ConnectButton component
+              <ConnectButton connectWallet={connectWallet} loading={loading} />
             )}
             <div className="px-4 py-3 bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-700/50">
               <p className="text-xs font-mono text-gray-400">
@@ -696,8 +729,25 @@ const App = () => {
         </div>
 
         <div className="grid grid-cols-1 gap-8">
-          <MessageForm />
-          <MessageList />
+          {/* Use the imported MessageForm, passing props */}
+          <MessageForm
+            currentAccount={currentAccount}
+            sendHambaMessage={sendHambaMessage}
+            newMessage={newMessage}
+            setNewMessage={setNewMessage}
+            loading={loading}
+            isOnCooldown={isOnCooldown}
+            formattedTimeRemaining={formattedTimeRemaining}
+            formatAddress={formatAddress}
+          />
+          {/* Use the imported MessageList, passing props */}
+          <MessageList
+            messages={messages}
+            fetchAllMessages={fetchAllMessages}
+            loading={loading}
+            currentAccount={currentAccount}
+            formatAddress={formatAddress}
+          />
         </div>
 
         <footer className="mt-12 pt-8 border-t border-gray-800 text-center">
